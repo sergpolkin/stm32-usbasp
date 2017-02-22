@@ -16,6 +16,7 @@ static uint8_t prog_blockflags;
 static uint8_t prog_pagecounter;
 
 static uint16_t usbFunctionRead(uint8_t* data, uint16_t len);
+static uint16_t usbFunctionWrite(uint8_t* data, uint16_t len);
 
 static int usbFunctionSetup(usbd_device *usbd_dev, struct usb_setup_data *req,
 	uint8_t **buf, uint16_t *len,
@@ -77,18 +78,18 @@ static int usbFunctionSetup(usbd_device *usbd_dev, struct usb_setup_data *req,
 
 	} else if (req->bRequest == USBASP_FUNC_WRITEFLASH) {
 
-		// if (!prog_address_newmode)
-		// 	prog_address = (data[3] << 8) | data[2];
-		//
-		// prog_pagesize = data[4];
-		// prog_blockflags = data[5] & 0x0F;
-		// prog_pagesize += (((unsigned int) data[5] & 0xF0) << 4);
-		// if (prog_blockflags & PROG_BLOCKFLAG_FIRST) {
-		// 	prog_pagecounter = prog_pagesize;
-		// }
-		// prog_nbytes = (data[7] << 8) | data[6];
-		// prog_state = PROG_STATE_WRITEFLASH;
-		// len = 0xff; /* multiple out */
+		if (!prog_address_newmode)
+			prog_address = req->wValue;
+
+		prog_pagesize = req->wIndex & 0xFF;
+		prog_blockflags = (req->wIndex >> 8) & 0x0F;
+		prog_pagesize += ((req->wIndex >> 8) & 0xF0) << 4;
+		if (prog_blockflags & PROG_BLOCKFLAG_FIRST) {
+			prog_pagecounter = prog_pagesize;
+		}
+		prog_nbytes = req->wLength;
+		prog_state = PROG_STATE_WRITEFLASH;
+		(*len) = usbFunctionWrite((*buf), prog_nbytes);
 
 	} else if (req->bRequest == USBASP_FUNC_WRITEEEPROM) {
 
@@ -217,6 +218,74 @@ uint16_t usbFunctionRead(uint8_t* data, uint16_t len) {
 	}
 
 	return len;
+}
+
+uint16_t usbFunctionWrite(uint8_t* data, uint16_t len) {
+	uint8_t retVal = 0;
+	uint8_t i;
+
+	/* check if programmer is in correct write state */
+	if ((prog_state != PROG_STATE_WRITEFLASH) && (prog_state
+		!= PROG_STATE_WRITEEEPROM) && (prog_state != PROG_STATE_TPI_WRITE)) {
+		return 0xff;
+	}
+
+	if (prog_state == PROG_STATE_TPI_WRITE)
+	{
+		// tpi_write_block(prog_address, data, len);
+		// prog_address += len;
+		// prog_nbytes -= len;
+		// if(prog_nbytes <= 0)
+		// {
+		// 	prog_state = PROG_STATE_IDLE;
+		// 	return 1;
+		// }
+		// return 0;
+		return 0xff;
+	}
+
+	for (i = 0; i < len; i++) {
+
+		if (prog_state == PROG_STATE_WRITEFLASH) {
+			/* Flash */
+
+			if (prog_pagesize == 0) {
+				/* not paged */
+				ispWriteFlash(prog_address, data[i], 1);
+			} else {
+				/* paged */
+				ispWriteFlash(prog_address, data[i], 0);
+				prog_pagecounter--;
+				if (prog_pagecounter == 0) {
+					ispFlushPage(prog_address, data[i]);
+					prog_pagecounter = prog_pagesize;
+				}
+			}
+
+		} else {
+			/* EEPROM */
+			// ispWriteEEPROM(prog_address, data[i]);
+			return 0xff;
+		}
+
+		prog_nbytes--;
+
+		if (prog_nbytes == 0) {
+			prog_state = PROG_STATE_IDLE;
+			if ((prog_blockflags & PROG_BLOCKFLAG_LAST) && (prog_pagecounter
+					!= prog_pagesize)) {
+
+				/* last block and page flush pending, so flush it now */
+				ispFlushPage(prog_address, data[i]);
+			}
+
+			retVal = 1; // Need to return 1 when no more data is to be received
+		}
+
+		prog_address++;
+	}
+
+	return retVal;
 }
 
 static void config_setup(usbd_device *usbd_dev, uint16_t wValue) {

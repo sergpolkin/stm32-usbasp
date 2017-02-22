@@ -147,6 +147,76 @@ uint8_t ispReadFlash(uint32_t address) {
 	return ispTransmit(0);
 }
 
+uint8_t ispWriteFlash(uint32_t address, uint8_t data, uint8_t pollmode) {
+
+	/* 0xFF is value after chip erase, so skip programming
+	 if (data == 0xFF) {
+	 return 0;
+	 }
+	 */
+
+	ispUpdateExtended(address);
+
+	ispTransmit(0x40 | ((address & 1) << 3));
+	ispTransmit(address >> 9);
+	ispTransmit(address >> 1);
+	ispTransmit(data);
+
+	if (pollmode == 0)
+		return 0;
+
+	if (data == 0x7F) {
+		ispDelay(4800); /* wait 4,8 ms */
+		return 0;
+	} else {
+
+		/* polling flash */
+		uint8_t retries = 30;
+		while (retries != 0) {
+			if (ispReadFlash(address) != 0x7F) {
+				return 0;
+			};
+
+			ispDelay(320);
+			retries--;
+
+		}
+	}
+
+	return 1; /* error */
+}
+
+uint8_t ispFlushPage(uint32_t address, uint8_t pollvalue) {
+
+	ispUpdateExtended(address);
+
+	ispTransmit(0x4C);
+	ispTransmit(address >> 9);
+	ispTransmit(address >> 1);
+	ispTransmit(0);
+
+	if (pollvalue == 0xFF) {
+		ispDelay(4800); /* wait 4,8 ms */
+		return 0;
+	} else {
+
+		/* polling flash */
+		uint8_t retries = 30;
+		while (retries != 0) {
+			if (ispReadFlash(address) != 0xFF) {
+				return 0;
+			};
+
+			ispDelay(320);
+			retries--;
+
+		}
+
+	}
+
+	return 1; /* error */
+}
+
 void timer_init(void) {
 	/* Enable TIM2 clock. */
 	rcc_periph_clock_enable(RCC_TIM2);
