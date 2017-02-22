@@ -224,6 +224,18 @@ uint8_t ispReadEEPROM(uint32_t address) {
 	return ispTransmit(0);
 }
 
+uint8_t ispWriteEEPROM(uint32_t address, uint8_t data) {
+
+	ispTransmit(0xC0);
+	ispTransmit(address >> 8);
+	ispTransmit(address);
+	ispTransmit(data);
+
+	ispDelay(9600); // wait 9,6 ms
+
+	return 0;
+}
+
 void timer_init(void) {
 	/* Enable TIM2 clock. */
 	rcc_periph_clock_enable(RCC_TIM2);

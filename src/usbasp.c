@@ -89,18 +89,18 @@ static int usbFunctionSetup(usbd_device *usbd_dev, struct usb_setup_data *req,
 		}
 		prog_nbytes = req->wLength;
 		prog_state = PROG_STATE_WRITEFLASH;
-		(*len) = usbFunctionWrite((*buf), prog_nbytes);
+		(*len) = usbFunctionWrite((*buf), prog_nbytes); /* multiple out */
 
 	} else if (req->bRequest == USBASP_FUNC_WRITEEEPROM) {
 
-		// if (!prog_address_newmode)
-		// 	prog_address = (data[3] << 8) | data[2];
-		//
-		// prog_pagesize = 0;
-		// prog_blockflags = 0;
-		// prog_nbytes = (data[7] << 8) | data[6];
-		// prog_state = PROG_STATE_WRITEEEPROM;
-		// len = 0xff; /* multiple out */
+		if (!prog_address_newmode)
+			prog_address = req->wValue;
+
+		prog_pagesize = 0;
+		prog_blockflags = 0;
+		prog_nbytes = req->wLength;
+		prog_state = PROG_STATE_WRITEEEPROM;
+		(*len) = usbFunctionWrite((*buf), prog_nbytes); /* multiple out */
 
 	} else if (req->bRequest == USBASP_FUNC_SETLONGADDRESS) {
 
@@ -263,8 +263,7 @@ uint16_t usbFunctionWrite(uint8_t* data, uint16_t len) {
 
 		} else {
 			/* EEPROM */
-			// ispWriteEEPROM(prog_address, data[i]);
-			return 0xff;
+			ispWriteEEPROM(prog_address, data[i]);
 		}
 
 		prog_nbytes--;

@@ -24,7 +24,7 @@ uint8_t ispFlushPage(uint32_t address, uint8_t pollvalue);
 uint8_t ispReadFlash(uint32_t address);
 
 /* write byte to eeprom at given address */
-uint8_t ispWriteEEPROM(unsigned int address, uint8_t data);
+uint8_t ispWriteEEPROM(uint32_t address, uint8_t data);
 
 /* set SCK speed. call before ispConnect! */
 void ispSetSCKOption(uint8_t sckoption);
