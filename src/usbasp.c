@@ -65,12 +65,12 @@ static int usbFunctionSetup(usbd_device *usbd_dev, struct usb_setup_data *req,
 
 	} else if (req->bRequest == USBASP_FUNC_READEEPROM) {
 
-		// if (!prog_address_newmode)
-		// 	prog_address = (data[3] << 8) | data[2];
-		//
-		// prog_nbytes = (data[7] << 8) | data[6];
-		// prog_state = PROG_STATE_READEEPROM;
-		// len = 0xff; /* multiple in */
+		if (!prog_address_newmode)
+			prog_address = req->wValue;
+
+		prog_nbytes = req->wLength;
+		prog_state = PROG_STATE_READEEPROM;
+		(*len) = usbFunctionRead((*buf), prog_nbytes); /* multiple in */
 
 	} else if (req->bRequest == USBASP_FUNC_ENABLEPROG) {
 		(*buf)[0] = ispEnterProgrammingMode();
@@ -206,8 +206,7 @@ uint16_t usbFunctionRead(uint8_t* data, uint16_t len) {
 		if (prog_state == PROG_STATE_READFLASH) {
 			data[i] = ispReadFlash(prog_address);
 		} else {
-			// data[i] = ispReadEEPROM(prog_address);
-			return 0xff;
+			data[i] = ispReadEEPROM(prog_address);
 		}
 		prog_address++;
 	}

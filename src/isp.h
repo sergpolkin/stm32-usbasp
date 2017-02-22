@@ -13,7 +13,7 @@ extern uint8_t (*ispTransmit)(uint8_t);
 uint8_t ispEnterProgrammingMode(void);
 
 /* read byte from eeprom at given address */
-uint8_t ispReadEEPROM(unsigned int address);
+uint8_t ispReadEEPROM(uint32_t address);
 
 /* write byte to flash at given address */
 uint8_t ispWriteFlash(uint32_t address, uint8_t data, uint8_t pollmode);

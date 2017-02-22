@@ -217,6 +217,13 @@ uint8_t ispFlushPage(uint32_t address, uint8_t pollvalue) {
 	return 1; /* error */
 }
 
+uint8_t ispReadEEPROM(uint32_t address) {
+	ispTransmit(0xA0);
+	ispTransmit(address >> 8);
+	ispTransmit(address);
+	return ispTransmit(0);
+}
+
 void timer_init(void) {
 	/* Enable TIM2 clock. */
 	rcc_periph_clock_enable(RCC_TIM2);
