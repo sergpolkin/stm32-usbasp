@@ -1,5 +1,5 @@
-OPENCM3_EXAMPLES_DIR=$(HOME)/cpp/stm32/libopencm3-examples
-OPENCM3_DIR=$(HOME)/cpp/stm32/libopencm3-examples/libopencm3
+OPENCM3_EXAMPLES_DIR ?= $(HOME)/stm32/libopencm3-examples
+OPENCM3_DIR ?= $(OPENCM3_EXAMPLES_DIR)/libopencm3
 
 V = 1
 
